@@ -1,163 +1,107 @@
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
-local UserInputService = game:GetService("UserInputService")
+--[[
+    LEGACY K1NGS - EMERGENCY FIX
+    Se o menu não aparecia, esta versão força a exibição no CoreGui.
+]]
 
--- Configurações de Estado
-local reductionEnabled = false
-_G.LegacyTextureReducerConnected = _G.LegacyTextureReducerConnected or false
+local function StartLegacyK1ngs()
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local Lighting = game:GetService("Lighting")
+    local UserInputService = game:GetService("UserInputService")
+    local CoreGui = game:GetService("CoreGui")
 
--- Função de Limpeza Ultra Agressiva
-local function processObject(obj)
-    if obj:IsA("BasePart") then
-        obj.Material = Enum.Material.Plastic
-        obj.Reflectance = 0
-        obj.CastShadow = false
-        if obj:IsA("MeshPart") then
-            obj.TextureID = ""
-        end
-    elseif obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("PostEffect") or obj:IsA("Atmosphere") or obj:IsA("Sky") then
-        obj:Destroy()
-    end
-end
+    local reductionEnabled = false
 
--- Aplicação do Boost
-local function applyReductions()
-    if reductionEnabled then return end
-    reductionEnabled = true
-
-    Lighting.GlobalShadows = false
-    Lighting.FogEnd = 300
-    Lighting.Brightness = 1
-    Lighting.Technology = Enum.Technology.Compatibility
-    
-    for _, effect in ipairs(Lighting:GetChildren()) do
-        if not effect:IsA("Script") then effect:Destroy() end
-    end
-
-    local descendants = workspace:GetDescendants()
-    for i = 1, #descendants do
-        processObject(descendants[i])
-        if i % 500 == 0 then task.wait() end 
-    end
-
-    if not _G.LegacyTextureReducerConnected then
-        _G.LegacyTextureReducerConnected = true
-        workspace.DescendantAdded:Connect(function(obj)
-            if reductionEnabled then processObject(obj) end
+    -- [ Função de Limpeza ]
+    local function processObject(obj)
+        pcall(function()
+            if obj:IsA("BasePart") then
+                obj.Material = Enum.Material.Plastic
+                obj.Reflectance = 0
+                obj.CastShadow = false
+                if obj:IsA("MeshPart") then obj.TextureID = "" end
+            elseif obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+                obj:Destroy()
+            end
         end)
     end
 
-    settings().Rendering.QualityLevel = 1
-    settings().Physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.EnabledAggressive
-end
-
--- Função para tornar o Menu Móvel
-local function makeDraggable(gui)
-    local dragging, dragInput, dragStart, startPos
-
-    gui.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = gui.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
+    -- [ Otimização ]
+    local function applyBoost()
+        reductionEnabled = true
+        Lighting.GlobalShadows = false
+        Lighting.Brightness = 2
+        
+        for _, v in ipairs(Lighting:GetChildren()) do
+            if v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("BlurEffect") then v:Destroy() end
         end
-    end)
+        
+        local sky = Instance.new("Sky", Lighting)
+        sky.SkyboxBk, sky.SkyboxDn, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt, sky.SkyboxUp = "", "", "", "", "", ""
+        
+        for _, obj in ipairs(workspace:GetDescendants()) do processObject(obj) end
+        workspace.DescendantAdded:Connect(function(obj) if reductionEnabled then processObject(obj) end end)
+        
+        pcall(function() settings().Rendering.QualityLevel = 1 end)
+        collectgarbage("collect")
+    end
 
-    gui.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-end
-
--- Interface
-local function createMenu()
-    local player = Players.LocalPlayer
-    local pGui = player:WaitForChild("PlayerGui")
-    
+    -- [ Criação da Interface no CoreGui (Mais garantido) ]
     local sg = Instance.new("ScreenGui")
-    sg.Name = "LegacyBoost"
-    sg.ResetOnSpawn = false
-    sg.Parent = pGui
+    sg.Name = "LegacyForced"
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 160, 0, 110)
-    frame.Position = UDim2.new(1, -170, 0, 10)
-    frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    frame.BorderSizePixel = 0
-    frame.Active = true -- Necessário para o arrasto
-    frame.Parent = sg
+    -- Tenta colocar no CoreGui, se falhar, vai para o PlayerGui
+    local success, err = pcall(function() sg.Parent = CoreGui end)
+    if not success then sg.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
 
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
-    makeDraggable(frame)
+    local f = Instance.new("Frame", sg)
+    f.Size = UDim2.new(0, 160, 0, 110)
+    f.Position = UDim2.new(0.5, -80, 0.2, 0) -- Centralizado no topo para você ver logo
+    f.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    f.Active = true
+    f.Draggable = true -- Ativa o arraste nativo se o executor permitir
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
 
-    -- Contador de FPS
-    local fpsLabel = Instance.new("TextLabel")
-    fpsLabel.Size = UDim2.new(1, 0, 0, 25)
-    fpsLabel.Position = UDim2.new(0, 0, 0, 5)
-    fpsLabel.BackgroundTransparency = 1
-    fpsLabel.Text = "FPS: --"
-    fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
-    fpsLabel.Font = Enum.Font.RobotoMono
-    fpsLabel.TextSize = 14
-    fpsLabel.Parent = frame
+    local fps = Instance.new("TextLabel", f)
+    fps.Size = UDim2.new(1, 0, 0, 25)
+    fps.BackgroundTransparency = 1
+    fps.TextColor3 = Color3.fromRGB(0, 255, 150)
+    fps.Font = Enum.Font.Code
+    fps.TextSize = 15
+    fps.Text = "FPS: --"
 
-    -- Nome do Menu
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, 0, 0, 25)
-    titleLabel.Position = UDim2.new(0, 0, 0, 30)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "legacy k1ngs"
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 13
-    titleLabel.Parent = frame
+    local t = Instance.new("TextLabel", f)
+    t.Size = UDim2.new(1, 0, 0, 20)
+    t.Position = UDim2.new(0, 0, 0, 30)
+    t.BackgroundTransparency = 1
+    t.Text = "legacy k1ngs"
+    t.TextColor3 = Color3.new(1, 1, 1)
+    t.Font = Enum.Font.GothamBold
+    t.TextSize = 14
 
-    -- Botão
-    local btn = Instance.new("TextButton")
+    local btn = Instance.new("TextButton", f)
     btn.Size = UDim2.new(0.85, 0, 0, 35)
     btn.Position = UDim2.new(0.075, 0, 0, 65)
-    btn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
     btn.Text = "ATIVAR BOOST"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 11
-    btn.Parent = frame
-
+    btn.TextSize = 12
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
-    -- Lógica do FPS
-    local lastTime = tick()
-    local frameCount = 0
-    RunService.RenderStepped:Connect(function()
-        frameCount += 1
-        if tick() - lastTime >= 1 then
-            fpsLabel.Text = "FPS: " .. frameCount
-            frameCount = 0
-            lastTime = tick()
-        end
+    -- FPS Logic
+    RunService.Heartbeat:Connect(function()
+        local frameCount = math.floor(1 / RunService.Heartbeat:Wait())
+        fps.Text = "FPS: " .. frameCount
     end)
 
-    btn.MouseButton1Click:Connect(function()
-        btn.Text = "OTIMIZADO"
-        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        applyReductions()
+    -- Clique
+    btn.Activated:Connect(function()
+        sg:Destroy() -- Some na hora
+        task.spawn(applyBoost)
     end)
 end
 
-if Players.LocalPlayer then createMenu() else Players.PlayerAdded:Connect(createMenu) end
+-- Executa a função principal com proteção
+pcall(StartLegacyK1ngs)
