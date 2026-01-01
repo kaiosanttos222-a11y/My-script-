@@ -1,107 +1,174 @@
 --[[
-    LEGACY K1NGS - EMERGENCY FIX
-    Se o menu não aparecia, esta versão força a exibição no CoreGui.
+    LEGACY K1NGS - FPS BOOST TOTAL
+    Cinza + Opaco + Ataques limpos + Menu
 ]]
 
-local function StartLegacyK1ngs()
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local Lighting = game:GetService("Lighting")
-    local UserInputService = game:GetService("UserInputService")
-    local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local Terrain = workspace:FindFirstChildOfClass("Terrain")
+local player = Players.LocalPlayer
 
-    local reductionEnabled = false
+local GRAY = Color3.fromRGB(130,130,130)
 
-    -- [ Função de Limpeza ]
-    local function processObject(obj)
-        pcall(function()
-            if obj:IsA("BasePart") then
-                obj.Material = Enum.Material.Plastic
-                obj.Reflectance = 0
-                obj.CastShadow = false
-                if obj:IsA("MeshPart") then obj.TextureID = "" end
-            elseif obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-                obj:Destroy()
-            end
-        end)
-    end
+------------------------------------------------
+-- ILUMINAÇÃO OPACA + SEM NÉVOA
+------------------------------------------------
+local function applyLighting()
+	Lighting.GlobalShadows = false
+	Lighting.Brightness = 1
+	Lighting.ExposureCompensation = -0.5
+	Lighting.Ambient = Color3.fromRGB(90,90,90)
+	Lighting.OutdoorAmbient = Color3.fromRGB(90,90,90)
+	Lighting.FogStart = 1e9
+	Lighting.FogEnd = 1e9
+	Lighting.EnvironmentSpecularScale = 0
+	Lighting.EnvironmentDiffuseScale = 0
 
-    -- [ Otimização ]
-    local function applyBoost()
-        reductionEnabled = true
-        Lighting.GlobalShadows = false
-        Lighting.Brightness = 2
-        
-        for _, v in ipairs(Lighting:GetChildren()) do
-            if v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("BlurEffect") then v:Destroy() end
-        end
-        
-        local sky = Instance.new("Sky", Lighting)
-        sky.SkyboxBk, sky.SkyboxDn, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt, sky.SkyboxUp = "", "", "", "", "", ""
-        
-        for _, obj in ipairs(workspace:GetDescendants()) do processObject(obj) end
-        workspace.DescendantAdded:Connect(function(obj) if reductionEnabled then processObject(obj) end end)
-        
-        pcall(function() settings().Rendering.QualityLevel = 1 end)
-        collectgarbage("collect")
-    end
-
-    -- [ Criação da Interface no CoreGui (Mais garantido) ]
-    local sg = Instance.new("ScreenGui")
-    sg.Name = "LegacyForced"
-    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    -- Tenta colocar no CoreGui, se falhar, vai para o PlayerGui
-    local success, err = pcall(function() sg.Parent = CoreGui end)
-    if not success then sg.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
-
-    local f = Instance.new("Frame", sg)
-    f.Size = UDim2.new(0, 160, 0, 110)
-    f.Position = UDim2.new(0.5, -80, 0.2, 0) -- Centralizado no topo para você ver logo
-    f.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    f.Active = true
-    f.Draggable = true -- Ativa o arraste nativo se o executor permitir
-    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-
-    local fps = Instance.new("TextLabel", f)
-    fps.Size = UDim2.new(1, 0, 0, 25)
-    fps.BackgroundTransparency = 1
-    fps.TextColor3 = Color3.fromRGB(0, 255, 150)
-    fps.Font = Enum.Font.Code
-    fps.TextSize = 15
-    fps.Text = "FPS: --"
-
-    local t = Instance.new("TextLabel", f)
-    t.Size = UDim2.new(1, 0, 0, 20)
-    t.Position = UDim2.new(0, 0, 0, 30)
-    t.BackgroundTransparency = 1
-    t.Text = "legacy k1ngs"
-    t.TextColor3 = Color3.new(1, 1, 1)
-    t.Font = Enum.Font.GothamBold
-    t.TextSize = 14
-
-    local btn = Instance.new("TextButton", f)
-    btn.Size = UDim2.new(0.85, 0, 0, 35)
-    btn.Position = UDim2.new(0.075, 0, 0, 65)
-    btn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-    btn.Text = "ATIVAR BOOST"
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-
-    -- FPS Logic
-    RunService.Heartbeat:Connect(function()
-        local frameCount = math.floor(1 / RunService.Heartbeat:Wait())
-        fps.Text = "FPS: " .. frameCount
-    end)
-
-    -- Clique
-    btn.Activated:Connect(function()
-        sg:Destroy() -- Some na hora
-        task.spawn(applyBoost)
-    end)
+	-- remove pós-processamento
+	for _,v in ipairs(Lighting:GetChildren()) do
+		if v:IsA("PostEffect") or v:IsA("Atmosphere") then
+			v:Destroy()
+		end
+	end
 end
 
--- Executa a função principal com proteção
-pcall(StartLegacyK1ngs)
+------------------------------------------------
+-- SKYBOX PRETO FORÇADO
+------------------------------------------------
+local function applyBlackSky()
+	for _,v in ipairs(Lighting:GetChildren()) do
+		if v:IsA("Sky") then
+			v:Destroy()
+		end
+	end
+
+	local sky = Instance.new("Sky")
+	sky.Name = "LegacyBlackSky"
+	sky.SkyboxBk = "rbxassetid://0"
+	sky.SkyboxDn = "rbxassetid://0"
+	sky.SkyboxFt = "rbxassetid://0"
+	sky.SkyboxLf = "rbxassetid://0"
+	sky.SkyboxRt = "rbxassetid://0"
+	sky.SkyboxUp = "rbxassetid://0"
+	sky.SunAngularSize = 0
+	sky.MoonAngularSize = 0
+	sky.Parent = Lighting
+end
+
+------------------------------------------------
+-- BOOST PRINCIPAL
+------------------------------------------------
+local function runBoost()
+	applyLighting()
+	applyBlackSky()
+
+	-- força skybox se tentarem mudar
+	Lighting.ChildAdded:Connect(function(obj)
+		if obj:IsA("Sky") and obj.Name ~= "LegacyBlackSky" then
+			task.wait()
+			applyBlackSky()
+		end
+	end)
+
+	-- Terrain ultra leve
+	if Terrain then
+		Terrain.CastShadow = false
+		Terrain.WaterReflectance = 0
+		Terrain.WaterTransparency = 1
+		Terrain.WaterWaveSize = 0
+		Terrain.WaterWaveSpeed = 0
+	end
+
+	-- DESATIVA EFEITOS (ATAQUES / CUSTOM) + TEXTURAS CINZA
+	local function boost(obj)
+		if obj:IsA("BasePart") then
+			obj.Material = Enum.Material.SmoothPlastic
+			obj.Color = GRAY
+			obj.CastShadow = false
+			obj.Reflectance = 0
+		elseif obj:IsA("MeshPart") then
+			obj.Color = GRAY
+			obj.Material = Enum.Material.SmoothPlastic
+		elseif obj:IsA("ParticleEmitter")
+			or obj:IsA("Trail")
+			or obj:IsA("Beam")
+			or obj:IsA("Smoke")
+			or obj:IsA("Fire") then
+			obj.Enabled = false
+		elseif obj:IsA("PointLight")
+			or obj:IsA("SurfaceLight")
+			or obj:IsA("SpotLight") then
+			obj.Enabled = false
+		elseif obj:IsA("Highlight") then
+			obj.Enabled = false
+		end
+	end
+
+	-- aplica no mapa
+	for _,obj in ipairs(workspace:GetDescendants()) do
+		boost(obj)
+	end
+
+	workspace.DescendantAdded:Connect(function(obj)
+		task.wait()
+		boost(obj)
+	end)
+
+	-- personagem
+	local function boostChar(char)
+		for _,v in ipairs(char:GetDescendants()) do
+			if v:IsA("BasePart") or v:IsA("MeshPart") then
+				v.Material = Enum.Material.SmoothPlastic
+				v.Color = GRAY
+				v.CastShadow = false
+				v.Reflectance = 0
+			end
+		end
+	end
+
+	if player.Character then
+		boostChar(player.Character)
+	end
+	player.CharacterAdded:Connect(boostChar)
+end
+
+------------------------------------------------
+-- MENU
+------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0,180,0,90)
+frame.Position = UDim2.new(1,-200,0,20)
+frame.BackgroundColor3 = Color3.fromRGB(18,18,18)
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,16)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,30)
+title.BackgroundTransparency = 1
+title.Text = "Legacy K1ngs"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.TextColor3 = Color3.new(1,1,1)
+
+local button = Instance.new("TextButton", frame)
+button.Size = UDim2.new(1,-20,0,35)
+button.Position = UDim2.new(0,10,0,40)
+button.Text = "REDUCE"
+button.Font = Enum.Font.GothamBold
+button.TextSize = 14
+button.TextColor3 = Color3.new(1,1,1)
+button.BackgroundColor3 = Color3.fromRGB(90,90,90)
+button.BorderSizePixel = 0
+Instance.new("UICorner", button).CornerRadius = UDim.new(0,12)
+
+------------------------------------------------
+-- CLICK
+------------------------------------------------
+button.MouseButton1Click:Connect(function()
+	runBoost()
+	gui:Destroy()
+end)
