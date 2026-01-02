@@ -1,4 +1,4 @@
--- Legacy K1ngs👑 FPS ULTRA + TELA ESTICADA + FECHAR
+-- Legacy K1ngs👑 FPS TOTAL EDITION (SmoothPlastic Edition)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
@@ -11,10 +11,10 @@ ScreenGui.Name = "LegacyK1ngs"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
--- Frame Principal (Preto Total, Ajustado para 3 botões)
+-- Frame Principal
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 220, 0, 190) -- Aumentado para caber o novo botão
-MainFrame.Position = UDim2.new(0.5, -110, 0.5, -95)
+MainFrame.Size = UDim2.new(0, 220, 0, 230)
+MainFrame.Position = UDim2.new(0.5, -110, 0.5, -115)
 MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -35,7 +35,7 @@ Title.TextSize = 22
 Title.Font = Enum.Font.GothamBold
 Title.Parent = MainFrame
 
--- Estilo de Botão Comum
+-- Função Criar Botão
 local function CreateButton(name, pos, color)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 180, 0, 35)
@@ -61,52 +61,64 @@ local function CreateButton(name, pos, color)
 end
 
 -- Botões
-local FPSButton = CreateButton("ATIVAR FPS", UDim2.new(0.5, -90, 0, 45), Color3.fromRGB(0, 162, 255))
-local StretchButton = CreateButton("TELA ESTICADA", UDim2.new(0.5, -90, 0, 90), Color3.fromRGB(255, 255, 255))
-local CloseButton = CreateButton("FECHAR(NÃO ABRE MAIS)", UDim2.new(0.5, -90, 0, 135), Color3.fromRGB(255, 80, 80))
+local FPSMaxButton = CreateButton("FPS MAXIMO", UDim2.new(0.5, -90, 0, 45), Color3.fromRGB(0, 162, 255))
+local FPSGoodButton = CreateButton("FPS BOM(Texture on)", UDim2.new(0.5, -90, 0, 90), Color3.fromRGB(0, 255, 127))
+local StretchButton = CreateButton("TELA ESTICADA", UDim2.new(0.5, -90, 0, 135), Color3.fromRGB(255, 255, 255))
+local CloseButton = CreateButton("FECHAR(NÃO ABRE MAIS)", UDim2.new(0.5, -90, 0, 180), Color3.fromRGB(255, 80, 80))
 
---- LÓGICA DE OTIMIZAÇÃO FPS ---
-local GreyColor = Color3.fromRGB(120, 120, 120)
-
-local function ApplyOptimization(obj)
+--- LÓGICA DE OTIMIZAÇÃO ---
+local function ApplySettings(obj, mode)
+    -- Limpeza de Efeitos Especiais (Comum a ambos)
     if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Explosion") then
         obj:Destroy()
+    
+    -- Transformação de Partes em SmoothPlastic
     elseif obj:IsA("BasePart") or obj:IsA("MeshPart") then
-        obj.Material = Enum.Material.SmoothPlastic
-        obj.Color = GreyColor
+        obj.Material = Enum.Material.SmoothPlastic -- Força o material liso
         obj.Reflectance = 0
         obj.CastShadow = false
         if obj.Transparency < 1 then obj.Transparency = 0 end
+        
+        -- Se for Modo MAX, fica cinza. Se for GOOD, mantém a cor original.
+        if mode == "MAX" then
+            obj.Color = Color3.fromRGB(120, 120, 120)
+        end
+        
+    -- Remoção de Texturas, Roupas e Rostos
     elseif obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("Clothing") or obj:IsA("ShirtGraphic") or obj:IsA("CharacterMesh") then
         obj:Destroy()
+        
+    -- Desativação de Luzes de Ataques
     elseif obj:IsA("Light") then
         obj.Enabled = false
     end
 end
 
-FPSButton.MouseButton1Click:Connect(function()
-    FPSButton.Text = "FPS ATIVADO ✔"
-    FPSButton.TextColor3 = Color3.fromRGB(0, 255, 127)
-    
+local function StartFPS(mode)
+    -- Iluminação Otimizada
     Lighting.GlobalShadows = false
     Lighting.FogEnd = 9e9
-    Lighting.Brightness = 2
-    Lighting.OutdoorAmbient = GreyColor
+    Lighting.Brightness = 2 -- Garante que o SmoothPlastic fique bem visível e vibrante
     
     for _, l in pairs(Lighting:GetChildren()) do
         if l:IsA("PostEffect") or l:IsA("Sky") or l:IsA("Atmosphere") then l:Destroy() end
     end
 
-    for _, obj in pairs(Workspace:GetDescendants()) do ApplyOptimization(obj) end
+    -- Sweep inicial no mapa
+    for _, obj in pairs(Workspace:GetDescendants()) do 
+        ApplySettings(obj, mode) 
+    end
     
-    Workspace.DescendantAdded:Connect(function(obj)
-        task.wait()
-        ApplyOptimization(obj)
+    -- Monitoramento em tempo real (Novos objetos/Ataques)
+    Workspace.DescendantAdded:Connect(function(obj) 
+        task.wait() 
+        ApplySettings(obj, mode) 
     end)
     
+    -- Monitoramento de Players (Respawn e Novos jogadores)
     local function Monitor(char)
-        for _, o in pairs(char:GetDescendants()) do ApplyOptimization(o) end
-        char.DescendantAdded:Connect(ApplyOptimization)
+        for _, o in pairs(char:GetDescendants()) do ApplySettings(o, mode) end
+        char.DescendantAdded:Connect(function(o) ApplySettings(o, mode) end)
     end
 
     for _, p in pairs(Players:GetPlayers()) do
@@ -114,13 +126,23 @@ FPSButton.MouseButton1Click:Connect(function()
         p.CharacterAdded:Connect(Monitor)
     end
     Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(Monitor) end)
+end
+
+-- Eventos dos Botões
+FPSMaxButton.MouseButton1Click:Connect(function()
+    FPSMaxButton.Text = "FPS MAXIMO ✔"
+    FPSMaxButton.TextColor3 = Color3.fromRGB(0, 255, 127)
+    StartFPS("MAX")
 end)
 
---- LÓGICA TELA ESTICADA ---
+FPSGoodButton.MouseButton1Click:Connect(function()
+    FPSGoodButton.Text = "FPS BOM ✔"
+    FPSGoodButton.TextColor3 = Color3.fromRGB(0, 255, 127)
+    StartFPS("GOOD")
+end)
+
 StretchButton.MouseButton1Click:Connect(function()
     StretchButton.Text = "ESTICADO ✔"
-    StretchButton.TextColor3 = Color3.fromRGB(255, 215, 0)
-    
     getgenv().Resolution = { [".gg/scripters"] = 0.50 }
     local Camera = workspace.CurrentCamera
     if getgenv().gg_scripters == nil then
@@ -131,7 +153,6 @@ StretchButton.MouseButton1Click:Connect(function()
     getgenv().gg_scripters = "Aori0001"
 end)
 
---- LÓGICA DE FECHAR PERMANENTE ---
 CloseButton.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
