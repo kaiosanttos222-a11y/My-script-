@@ -1,114 +1,113 @@
--- Legacy K1ngs👑 FPS TOTAL EDITION (BY kdss)
+-- Legacy K1ngs👑 FPS TOTAL EDITION (HAKI & HITBOX FIXED)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Criar Interface
+-- Interface Moderna
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "LegacyK1ngs"
+ScreenGui.Name = "LegacyK1ngs_Final"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
--- Frame Principal
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 220, 0, 250)
-MainFrame.Position = UDim2.new(0.5, -110, 0.5, -125)
-MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+MainFrame.Size = UDim2.new(0, 240, 0, 310)
+MainFrame.Position = UDim2.new(0.5, -120, 0.5, -155)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
+local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 15)
-MainCorner.Parent = MainFrame
 
--- Título
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Color = Color3.fromRGB(0, 162, 255)
+MainStroke.Thickness = 2
+
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Size = UDim2.new(1, 0, 0, 50)
 Title.BackgroundTransparency = 1
-Title.Text = "Legacy K1ngs"
+Title.Text = "LEGACY K1NGS"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 22
+Title.TextSize = 20
 Title.Font = Enum.Font.GothamBold
 Title.Parent = MainFrame
 
--- Função Criar Botão
 local function CreateButton(name, pos, color)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 180, 0, 35)
+    btn.Size = UDim2.new(0, 200, 0, 42)
     btn.Position = pos
-    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    btn.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     btn.Text = name
-    btn.TextColor3 = color
+    btn.TextColor3 = Color3.fromRGB(240, 240, 240)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamSemibold
     btn.BorderSizePixel = 0
     btn.Parent = MainFrame
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = btn
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(50, 50, 50)
-    stroke.Thickness = 1
-    stroke.Parent = btn
-    
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    local s = Instance.new("UIStroke", btn)
+    s.Color = color
+    s.Thickness = 1.5
     return btn
 end
 
--- Botões
-local FPSMaxButton = CreateButton("FPS MAXIMO", UDim2.new(0.5, -90, 0, 45), Color3.fromRGB(0, 162, 255))
-local FPSGoodButton = CreateButton("FPS BOM(Texture on)", UDim2.new(0.5, -90, 0, 90), Color3.fromRGB(0, 255, 127))
-local StretchButton = CreateButton("TELA ESTICADA", UDim2.new(0.5, -90, 0, 135), Color3.fromRGB(255, 255, 255))
-local CloseButton = CreateButton("FECHAR(NÃO ABRE MAIS)", UDim2.new(0.5, -90, 0, 180), Color3.fromRGB(255, 80, 80))
+local FPSMaxButton = CreateButton("FPS MÁXIMO (CINZA)", UDim2.new(0.5, -100, 0, 60), Color3.fromRGB(0, 162, 255))
+local FPSGoodButton = CreateButton("FPS BOM (CORES)", UDim2.new(0.5, -100, 0, 115), Color3.fromRGB(0, 255, 127))
+local StretchButton = CreateButton("TELA ESTICADA", UDim2.new(0.5, -100, 0, 170), Color3.fromRGB(255, 255, 255))
+local CloseButton = CreateButton("FECHAR", UDim2.new(0.5, -100, 0, 225), Color3.fromRGB(255, 80, 80))
 
--- Nota de Crédito
-local CreditLabel = Instance.new("TextLabel")
-CreditLabel.Size = UDim2.new(1, 0, 0, 25)
-CreditLabel.Position = UDim2.new(0, 0, 0, 220)
-CreditLabel.BackgroundTransparency = 1
-CreditLabel.Text = "BY kdss"
-CreditLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-CreditLabel.TextSize = 12
-CreditLabel.Font = Enum.Font.GothamSemibold
-CreditLabel.Parent = MainFrame
+--- LÓGICA CORRIGIDA (HAKI & EFFECTS) ---
 
---- LÓGICA DE OTIMIZAÇÃO ---
 local function ApplySettings(obj, mode)
-    -- FILTRO DE SEGURANÇA TOTAL: Não mexe em NADA que seja jogador ou NPC
+    -- 1. FILTRO DE HUMANOID: Protege jogadores, NPCs, Haki e Roupas
     if obj:IsDescendantOf(Players) or obj:FindFirstAncestorOfClass("Model") and obj:FindFirstAncestorOfClass("Model"):FindFirstChild("Humanoid") then
+        return 
+    end
+
+    -- 2. REMOÇÃO DE EFEITOS DE ATAQUES (Apenas no Workspace/Mapa)
+    if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Explosion") then
+        obj:Destroy()
         return
     end
 
-    if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
-        obj:Destroy()
-    elseif obj:IsA("BasePart") or obj:IsA("MeshPart") then
-        obj.Material = Enum.Material.SmoothPlastic
-        obj.Reflectance = 0
-        obj.CastShadow = false
-        if mode == "MAX" then
-            obj.Color = Color3.fromRGB(120, 120, 120)
+    -- 3. OTIMIZAÇÃO SEM DELETAR (Usa Transparência para não quebrar Hitboxes)
+    pcall(function()
+        if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+            obj.Material = Enum.Material.SmoothPlastic
+            obj.Reflectance = 0
+            obj.CastShadow = false
+            if mode == "MAX" then
+                obj.Color = Color3.fromRGB(120, 120, 120)
+            end
+        elseif obj:IsA("Decal") or obj:IsA("Texture") then
+            obj.Transparency = 1 -- Apenas esconde, não deleta
+        elseif obj:IsA("Light") then
+            obj.Enabled = false
         end
-    elseif obj:IsA("Decal") or obj:IsA("Texture") then
-        obj:Destroy()
-    elseif obj:IsA("Light") then
-        obj.Enabled = false
-    end
+    end)
 end
 
 local function StartFPS(mode)
     Lighting.GlobalShadows = false
     Lighting.FogEnd = 9e9
-    Lighting.Brightness = 2
+    
+    -- Limpa efeitos de iluminação post-process
     for _, l in pairs(Lighting:GetChildren()) do
-        if l:IsA("PostEffect") then l:Destroy() end
+        if l:IsA("PostEffect") then l.Enabled = false end
     end
-    for _, obj in pairs(Workspace:GetDescendants()) do ApplySettings(obj, mode) end
-    Workspace.DescendantAdded:Connect(function(obj) ApplySettings(obj, mode) end)
+    
+    -- Otimiza o mapa existente
+    for _, obj in pairs(Workspace:GetDescendants()) do 
+        ApplySettings(obj, mode) 
+    end
+    
+    -- Monitora novos ataques e objetos que surgirem
+    Workspace.DescendantAdded:Connect(function(obj)
+        ApplySettings(obj, mode)
+    end)
 end
 
 -- Eventos
@@ -130,6 +129,4 @@ StretchButton.MouseButton1Click:Connect(function()
     end)
 end)
 
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
+CloseButton.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
