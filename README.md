@@ -1,4 +1,4 @@
--- Legacy K1ngs👑 FPS TOTAL EDITION (SmoothPlastic Edition)
+-- Legacy K1ngs👑 FPS TOTAL EDITION (BY kdss)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
@@ -11,10 +11,10 @@ ScreenGui.Name = "LegacyK1ngs"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
--- Frame Principal
+-- Frame Principal (Ajustado para os botões + nota de crédito)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 220, 0, 230)
-MainFrame.Position = UDim2.new(0.5, -110, 0.5, -115)
+MainFrame.Size = UDim2.new(0, 220, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -110, 0.5, -125)
 MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -66,61 +66,49 @@ local FPSGoodButton = CreateButton("FPS BOM(Texture on)", UDim2.new(0.5, -90, 0,
 local StretchButton = CreateButton("TELA ESTICADA", UDim2.new(0.5, -90, 0, 135), Color3.fromRGB(255, 255, 255))
 local CloseButton = CreateButton("FECHAR(NÃO ABRE MAIS)", UDim2.new(0.5, -90, 0, 180), Color3.fromRGB(255, 80, 80))
 
+-- Nota de Crédito (Dono)
+local CreditLabel = Instance.new("TextLabel")
+CreditLabel.Size = UDim2.new(1, 0, 0, 25)
+CreditLabel.Position = UDim2.new(0, 0, 0, 220)
+CreditLabel.BackgroundTransparency = 1
+CreditLabel.Text = "BY kdss"
+CreditLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+CreditLabel.TextSize = 12
+CreditLabel.Font = Enum.Font.GothamSemibold
+CreditLabel.Parent = MainFrame
+
 --- LÓGICA DE OTIMIZAÇÃO ---
 local function ApplySettings(obj, mode)
-    -- Limpeza de Efeitos Especiais (Comum a ambos)
     if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Explosion") then
         obj:Destroy()
-    
-    -- Transformação de Partes em SmoothPlastic
     elseif obj:IsA("BasePart") or obj:IsA("MeshPart") then
-        obj.Material = Enum.Material.SmoothPlastic -- Força o material liso
+        obj.Material = Enum.Material.SmoothPlastic
         obj.Reflectance = 0
         obj.CastShadow = false
         if obj.Transparency < 1 then obj.Transparency = 0 end
-        
-        -- Se for Modo MAX, fica cinza. Se for GOOD, mantém a cor original.
         if mode == "MAX" then
             obj.Color = Color3.fromRGB(120, 120, 120)
         end
-        
-    -- Remoção de Texturas, Roupas e Rostos
     elseif obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("Clothing") or obj:IsA("ShirtGraphic") or obj:IsA("CharacterMesh") then
         obj:Destroy()
-        
-    -- Desativação de Luzes de Ataques
     elseif obj:IsA("Light") then
         obj.Enabled = false
     end
 end
 
 local function StartFPS(mode)
-    -- Iluminação Otimizada
     Lighting.GlobalShadows = false
     Lighting.FogEnd = 9e9
-    Lighting.Brightness = 2 -- Garante que o SmoothPlastic fique bem visível e vibrante
-    
+    Lighting.Brightness = 2
     for _, l in pairs(Lighting:GetChildren()) do
         if l:IsA("PostEffect") or l:IsA("Sky") or l:IsA("Atmosphere") then l:Destroy() end
     end
-
-    -- Sweep inicial no mapa
-    for _, obj in pairs(Workspace:GetDescendants()) do 
-        ApplySettings(obj, mode) 
-    end
-    
-    -- Monitoramento em tempo real (Novos objetos/Ataques)
-    Workspace.DescendantAdded:Connect(function(obj) 
-        task.wait() 
-        ApplySettings(obj, mode) 
-    end)
-    
-    -- Monitoramento de Players (Respawn e Novos jogadores)
+    for _, obj in pairs(Workspace:GetDescendants()) do ApplySettings(obj, mode) end
+    Workspace.DescendantAdded:Connect(function(obj) task.wait() ApplySettings(obj, mode) end)
     local function Monitor(char)
         for _, o in pairs(char:GetDescendants()) do ApplySettings(o, mode) end
         char.DescendantAdded:Connect(function(o) ApplySettings(o, mode) end)
     end
-
     for _, p in pairs(Players:GetPlayers()) do
         if p.Character then Monitor(p.Character) end
         p.CharacterAdded:Connect(Monitor)
@@ -128,16 +116,14 @@ local function StartFPS(mode)
     Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(Monitor) end)
 end
 
--- Eventos dos Botões
+-- Eventos
 FPSMaxButton.MouseButton1Click:Connect(function()
     FPSMaxButton.Text = "FPS MAXIMO ✔"
-    FPSMaxButton.TextColor3 = Color3.fromRGB(0, 255, 127)
     StartFPS("MAX")
 end)
 
 FPSGoodButton.MouseButton1Click:Connect(function()
     FPSGoodButton.Text = "FPS BOM ✔"
-    FPSGoodButton.TextColor3 = Color3.fromRGB(0, 255, 127)
     StartFPS("GOOD")
 end)
 
